@@ -29,10 +29,15 @@ for id in range(1, 11):
         img_url = urljoin(book_site_url, img)
         img_title = urlsplit(img_url)[2].split('/')[-1]
         
-        print(unquote(img_title))
+        comments = soup.find_all('div', class_='texts')
 
         print(f'Заголовок: {title}')
         print(f'Изображение: {img_url}')
         print(f'Автор: {author}\n')
+        
+        if comments:
+            print('Комментарии:', end='\n')
+            for comment in comments:
+                print(comment.span.text, end='\n')
     except HTTPError:
             continue
