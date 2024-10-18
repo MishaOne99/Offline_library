@@ -5,14 +5,29 @@ from bs4 import BeautifulSoup
 from requests.exceptions import HTTPError
 from pathlib import Path
 from pathvalidate import sanitize_filename
+from urllib.parse import urljoin, urlsplit, unquote
 
 
-DIRECTORY_NAME = 'Books'
+DIRECTORY_NAME_BOOKS = 'Books'
+DIRECTORY_NAME_IMG = 'Images'
 BOOK_TEXT_URL = 'https://tululu.org/txt.php'
 BOOK_PAGE_URL = 'https://tululu.org/b'
+BOOK_SITE_URL = 'https://tululu.org'
 
 
-def download_book(response, file_name: str) -> None:
+def download_text(response, title: str, directory: str = DIRECTORY_NAME_BOOKS) -> None:
+    file_name = f'{directory}/{title}'
+    
+    with open(file_name, 'wb') as file:
+        file.write(response.content)
+
+
+def download_image(url: str, title: str, directory: str = DIRECTORY_NAME_IMG) -> None:
+    response = requests.get(url, verify=False)
+    response.raise_for_status
+    
+    file_name = f'{directory}/{title}'
+    
     with open(file_name, 'wb') as file:
         file.write(response.content)
 
@@ -36,10 +51,26 @@ def get_title(id: int) -> str:
     return title
 
 
+def get_image_title_and_url(id: int) -> str:
+    url = f'{BOOK_PAGE_URL}{id}/'
+    
+    response = requests.get(url, verify=False)
+    response.raise_for_status
+    
+    soup = BeautifulSoup(response.text, 'lxml')
+    
+    img = soup.find('div', class_='bookimage').find('img')['src']
+    img_url = urljoin(BOOK_SITE_URL, img)
+    img_title = urlsplit(img_url)[2].split('/')[-1]
+    
+    return {'url': img_url, 'title': unquote(img_title)}
+
+
 def main():
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     
-    Path(DIRECTORY_NAME).mkdir(parents=True, exist_ok=True)
+    Path(DIRECTORY_NAME_BOOKS).mkdir(parents=True, exist_ok=True)
+    Path(DIRECTORY_NAME_IMG).mkdir(parents=True,exist_ok=True)
     
     for id in range(1, 11):
         try:
@@ -52,9 +83,8 @@ def main():
             
             title = f'{id}.{get_title(id=id)}.txt'
             
-            file_name = f'{DIRECTORY_NAME}/{title}'
-            
-            download_book(response=response, file_name=file_name)
+            download_text(response=response, title=title)
+            download_image(**get_image_title_and_url(id))
         except HTTPError:
             continue
 
