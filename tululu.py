@@ -1,15 +1,21 @@
 import argparse
 import requests
+import urllib3
 
 from bs4 import BeautifulSoup
 from requests.exceptions import HTTPError
+from pathlib import Path
 from urllib.parse import urljoin, urlsplit, unquote
 
-from main import check_for_redirect
+from auxiliary_functions import check_for_redirect, download_text, download_image
 
 
-BOOK_SITE_URL = 'https://tululu.org'
+DIRECTORY_NAME_BOOKS = 'Books'
+DIRECTORY_NAME_IMG = 'Images'
+
+BOOK_TEXT_URL = 'https://tululu.org/txt.php'
 BOOK_PAGE_URL = 'https://tululu.org/b'
+BOOK_SITE_URL = 'https://tululu.org'
 
 
 def parse_book_page(response: str) -> dict:
@@ -44,24 +50,35 @@ def parse_book_page(response: str) -> dict:
     }
 
 
-def display_information_about_books(start_id: int, end_id: int) -> None:
+def downloads_books(start_id: int, end_id: int) -> None:
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
+    Path(DIRECTORY_NAME_BOOKS).mkdir(parents=True, exist_ok=True)
+    Path(DIRECTORY_NAME_IMG).mkdir(parents=True,exist_ok=True)
+    
     for id in range(start_id, end_id):
         try:
-            url = f'{BOOK_PAGE_URL}{id}/'
-
-            response = requests.get(url)
-            response.raise_for_status()
-            check_for_redirect(response=response)
+            book_text_url = BOOK_TEXT_URL
+            payload = {'id': id}
             
-            title, genres, author, img_url, img_title, comments = parse_book_page(response=response).values()
+            book_text_url_response = requests.get(book_text_url, params=payload, verify=False)
+            book_text_url_response.raise_for_status
+            check_for_redirect(response=book_text_url_response)
+            
+            book_url = f'{BOOK_PAGE_URL}{id}/'
+
+            book_url_response = requests.get(book_url)
+            book_url_response.raise_for_status()
+            check_for_redirect(response=book_url_response)
+            
+            title, genres, author, img_url, img_title, comments = parse_book_page(response=book_url_response).values()
+            
+            download_text(response=book_text_url_response, title=title)
+            download_image(url=img_url, title=img_title)
 
             print(f'Заголовок: {title}')
             print(f'Жанр: {genres}')
-            print(f'Изображение: {img_url}')
             print(f'Автор: {author}\n')
-            
-            if comments:
-                print(f'Комментарии: {comments}\n')
         except HTTPError:
                 continue
 
@@ -74,7 +91,7 @@ def main():
     
     args = parser.parse_args()
 
-    display_information_about_books(start_id=args.start_id, end_id=args.end_id)
+    downloads_books(start_id=args.start_id, end_id=args.end_id)
 
 
 if __name__ == '__main__':
