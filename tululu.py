@@ -24,20 +24,26 @@ for id in range(1, 11):
 
         title = title_text[0].strip()
         author = title_text[1].strip()
-
-        img = soup.find('div', class_='bookimage').find('img')['src']
-        img_url = urljoin(book_site_url, img)
-        img_title = urlsplit(img_url)[2].split('/')[-1]
         
-        comments = soup.find_all('div', class_='texts')
+        genres = []
+        
+        for genre in soup.find('span', class_='d_book').find_all('a'):
+            genres.append(genre.text)
+
+        # img = soup.find('div', class_='bookimage').find('img')['src']
+        # img_url = urljoin(book_site_url, img)
+        # img_title = urlsplit(img_url)[2].split('/')[-1]
+        
+        # comments = soup.find_all('div', class_='texts')
 
         print(f'Заголовок: {title}')
-        print(f'Изображение: {img_url}')
+        print(f'Жанр: {genres}')
+        # print(f'Изображение: {img_url}')
         print(f'Автор: {author}\n')
         
-        if comments:
-            print('Комментарии:', end='\n')
-            for comment in comments:
-                print(comment.span.text, end='\n')
+        # if comments:
+        #     print('Комментарии:', end='\n')
+        #     for comment in comments:
+        #         print(comment.span.text, end='\n')
     except HTTPError:
             continue
