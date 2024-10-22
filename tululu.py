@@ -1,9 +1,10 @@
 import argparse
+import logging
 import requests
 import urllib3
 
 from bs4 import BeautifulSoup
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ConnectionError
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit, unquote
 
@@ -26,19 +27,13 @@ def parse_book_page(response: str) -> dict:
     title = title_text[0].strip()
     author = title_text[1].strip()
     
-    genres = []
-    
-    for genre in soup.find('span', class_='d_book').find_all('a'):
-        genres.append(genre.text)
+    genres = [genre.text for genre in soup.find('span', class_='d_book').find_all('a')]
 
     img = soup.find('div', class_='bookimage').find('img')['src']
-    img_url = urljoin(BOOK_SITE_URL, img)
+    img_url = urljoin(BOOK_PAGE_URL, img)
     img_title = unquote(urlsplit(img_url)[2].split('/')[-1])
     
-    comments = []
-    
-    for comment in soup.find_all('div', class_='texts'):
-        comments.append(comment.span.text)
+    comments = [comment.span.text for comment in soup.find_all('div', class_='texts')]
     
     return {
         'title': title, 
@@ -56,16 +51,16 @@ def downloads_books(start_id: int, end_id: int) -> None:
     Path(DIRECTORY_NAME_BOOKS).mkdir(parents=True, exist_ok=True)
     Path(DIRECTORY_NAME_IMG).mkdir(parents=True,exist_ok=True)
     
-    for id in range(start_id, end_id):
+    for book_id in range(start_id, end_id):
         try:
             book_text_url = BOOK_TEXT_URL
-            payload = {'id': id}
+            payload = {'id': book_id}
             
             book_text_url_response = requests.get(book_text_url, params=payload, verify=False)
-            book_text_url_response.raise_for_status
+            book_text_url_response.raise_for_status()
             check_for_redirect(response=book_text_url_response)
             
-            book_url = f'{BOOK_PAGE_URL}{id}/'
+            book_url = f'{BOOK_PAGE_URL}{book_id}/'
 
             book_url_response = requests.get(book_url)
             book_url_response.raise_for_status()
@@ -80,7 +75,10 @@ def downloads_books(start_id: int, end_id: int) -> None:
             print(f'Жанр: {genres}')
             print(f'Автор: {author}\n')
         except HTTPError:
-                continue
+            logging.warning(f'Книги {book_url} нет на сайте.\n')
+            continue
+        except ConnectionError:
+            logging.warning(f'Не удалось установить соединение с сервером.\n')
 
 
 def main():
