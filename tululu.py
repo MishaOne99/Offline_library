@@ -17,7 +17,6 @@ DIRECTORY_NAME_IMG = 'Images'
 
 BOOK_TEXT_URL = 'https://tululu.org/txt.php'
 BOOK_PAGE_URL = 'https://tululu.org/b'
-BOOK_SITE_URL = 'https://tululu.org'
 
 
 def parse_book_page(response: str) -> dict:
@@ -31,7 +30,7 @@ def parse_book_page(response: str) -> dict:
     genres = [genre.text for genre in soup.find('span', class_='d_book').find_all('a')]
 
     img = soup.find('div', class_='bookimage').find('img')['src']
-    img_url = urljoin(BOOK_PAGE_URL, img)
+    img_url = urljoin(response.url, img)
     img_title = unquote(urlsplit(img_url)[2].split('/')[-1])
     
     comments = [comment.span.text for comment in soup.find_all('div', class_='texts')]
@@ -72,6 +71,7 @@ def downloads_books(start_id: int, end_id: int) -> None:
             download_text(response=book_text_url_response, title=title, directory=DIRECTORY_NAME_BOOKS)
             download_image(url=img_url, title=img_title, directory=DIRECTORY_NAME_IMG)
 
+            print(img_url)
             print(f'Заголовок: {title}')
             print(f'Жанр: {genres}')
             print(f'Автор: {author}\n')
