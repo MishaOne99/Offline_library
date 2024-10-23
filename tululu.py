@@ -5,6 +5,7 @@ import urllib3
 
 from bs4 import BeautifulSoup
 from requests.exceptions import HTTPError, ConnectionError
+from time import sleep
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit, unquote
 
@@ -68,8 +69,8 @@ def downloads_books(start_id: int, end_id: int) -> None:
             
             title, genres, author, img_url, img_title, comments = parse_book_page(response=book_url_response).values()
             
-            download_text(response=book_text_url_response, title=title)
-            download_image(url=img_url, title=img_title)
+            download_text(response=book_text_url_response, title=title, directory=DIRECTORY_NAME_BOOKS)
+            download_image(url=img_url, title=img_title, directory=DIRECTORY_NAME_IMG)
 
             print(f'Заголовок: {title}')
             print(f'Жанр: {genres}')
@@ -79,6 +80,8 @@ def downloads_books(start_id: int, end_id: int) -> None:
             continue
         except ConnectionError:
             logging.warning(f'Не удалось установить соединение с сервером.\n')
+            sleep(30)
+            continue
 
 
 def main():
