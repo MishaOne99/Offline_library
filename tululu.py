@@ -47,13 +47,13 @@ def parse_book_page(response: str) -> dict:
     }
 
 
-def downloads_books(start_id: int, end_id: int) -> None:
+def downloads_books(start_page: int, end_page: int) -> None:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     
     Path(DIRECTORY_NAME_BOOKS).mkdir(parents=True, exist_ok=True)
     Path(DIRECTORY_NAME_IMG).mkdir(parents=True,exist_ok=True)
     
-    books = get_list_books()
+    books = get_list_books(start_page=start_page, end_page=end_page)
     book_data = []
     
     for book_url in books:
@@ -101,14 +101,14 @@ def downloads_books(start_id: int, end_id: int) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description= 'Retrieves information about the book from the tululu website')
+    parser = argparse.ArgumentParser()
     
-    parser.add_argument('start_id', type=int, nargs='?', default=1, help='The initial ID of the book')
-    parser.add_argument('end_id', type=int, nargs='?', default=2, help='The final ID of the book')
+    parser.add_argument('--start_page', type=int, nargs='?', default=1)
+    parser.add_argument('--end_page', type=int, nargs='?', default=11)
     
     args = parser.parse_args()
 
-    downloads_books(start_id=args.start_id, end_id=args.end_id)
+    downloads_books(start_page=args.start_page, end_page=args.end_page)
 
 
 if __name__ == '__main__':
