@@ -9,6 +9,8 @@ def download_text(response, title: str, directory: str) -> None:
     with open(file_name, 'wb') as file:
         file.write(response.content)
 
+    return file_name
+
 
 def download_image(url: str, title: str, directory: str) -> None:
     response = requests.get(url, verify=False)
@@ -19,6 +21,7 @@ def download_image(url: str, title: str, directory: str) -> None:
     with open(file_name, 'wb') as file:
         file.write(response.content)
 
+    return file_name
 
 def check_for_redirect(response: str) -> None:
     if response.history:

@@ -1,6 +1,7 @@
 import argparse
 import logging
 import requests
+import json
 import urllib3
 
 from bs4 import BeautifulSoup
@@ -10,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urljoin, urlsplit, unquote
 
 from auxiliary_functions import check_for_redirect, download_text, download_image
+from parse_tululu_category import get_list_books
 
 
 DIRECTORY_NAME_BOOKS = 'Books'
@@ -51,7 +53,12 @@ def downloads_books(start_id: int, end_id: int) -> None:
     Path(DIRECTORY_NAME_BOOKS).mkdir(parents=True, exist_ok=True)
     Path(DIRECTORY_NAME_IMG).mkdir(parents=True,exist_ok=True)
     
-    for book_id in range(start_id, end_id):
+    books = get_list_books()
+    book_data = []
+    
+    for book_url in books:
+        book_id = urlsplit(book_url).path.strip('/')[1:]
+        
         try:
             book_text_url = BOOK_TEXT_URL
             payload = {'id': book_id}
@@ -68,13 +75,19 @@ def downloads_books(start_id: int, end_id: int) -> None:
             
             title, genres, author, img_url, img_title, comments = parse_book_page(response=book_url_response).values()
             
-            download_text(response=book_text_url_response, title=title, directory=DIRECTORY_NAME_BOOKS)
-            download_image(url=img_url, title=img_title, directory=DIRECTORY_NAME_IMG)
+            book_path = download_text(response=book_text_url_response, title=title, directory=DIRECTORY_NAME_BOOKS)
+            img_src = download_image(url=img_url, title=img_title, directory=DIRECTORY_NAME_IMG)
 
-            print(img_url)
-            print(f'Заголовок: {title}')
-            print(f'Жанр: {genres}')
-            print(f'Автор: {author}\n')
+            book = {
+                'title': title,
+                'author': author,
+                'img_src': img_src,
+                'book_path': book_path,
+                'comments': comments,
+                'genres': genres,
+            }
+            
+            book_data.append(book)
         except HTTPError:
             logging.warning(f'Книги {book_url} нет на сайте.\n')
             continue
@@ -82,6 +95,9 @@ def downloads_books(start_id: int, end_id: int) -> None:
             logging.warning(f'Не удалось установить соединение с сервером.\n')
             sleep(30)
             continue
+        
+        with open('book_data.json', 'w', encoding='UTF-8') as outfile:
+            json.dump(book_data, outfile, ensure_ascii=False, indent=4)
 
 
 def main():
