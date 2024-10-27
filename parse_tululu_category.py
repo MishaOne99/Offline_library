@@ -21,9 +21,8 @@ def get_list_books():
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, 'lxml')
+        card_books = soup.select('table.d_book')
 
-        card_books = soup.find_all('table', class_='d_book')
+        books.extend([urljoin(SITE_URL, book.select_one('a')['href']) for book in card_books])
 
-        books.extend([urljoin(SITE_URL, book.find('a')['href']) for book in card_books])
-
-    return books 
+    return books

@@ -24,18 +24,18 @@ BOOK_PAGE_URL = 'https://tululu.org/b'
 def parse_book_page(response: str) -> dict:
     soup = BeautifulSoup(response.text, 'lxml')
     
-    title_text = soup.find('h1').text.split('::')
+    title_text = soup.select_one('h1').text.split('::')
 
     title = title_text[0].strip()
     author = title_text[1].strip()
     
-    genres = [genre.text for genre in soup.find('span', class_='d_book').find_all('a')]
+    genres = [genre.text for genre in soup.select('span.d_book a')]
 
-    img = soup.find('div', class_='bookimage').find('img')['src']
+    img = soup.select_one('div.bookimage img')['src']
     img_url = urljoin(response.url, img)
     img_title = unquote(urlsplit(img_url)[2].split('/')[-1])
     
-    comments = [comment.span.text for comment in soup.find_all('div', class_='texts')]
+    comments = [comment.text for comment in soup.select('div.texts span')]
     
     return {
         'title': title, 
